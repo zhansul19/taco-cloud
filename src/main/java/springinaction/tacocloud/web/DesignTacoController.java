@@ -1,5 +1,6 @@
 package springinaction.tacocloud.web;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,24 +16,37 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.SessionAttributes;
-import springinaction.tacocloud.Ingredient.Type;
-import springinaction.tacocloud.data.IngredientRepository;
-import springinaction.tacocloud.Ingredient;
-import springinaction.tacocloud.Taco;
-import springinaction.tacocloud.TacoOrder;
 
+import lombok.extern.slf4j.Slf4j;
+import springinaction.tacocloud.Ingredient;
+import springinaction.tacocloud.Ingredient.Type;
+import springinaction.tacocloud.TacoOrder;
+import springinaction.tacocloud.Taco;
+import springinaction.tacocloud.Users;
+import springinaction.tacocloud.data.IngredientRepository;
+import springinaction.tacocloud.data.TacoRepository;
+import springinaction.tacocloud.data.UserRepository;
 
 @Controller
 @RequestMapping("/design")
-@SessionAttributes("tacoOrder")
+@SessionAttributes("order")
+@Slf4j
 public class DesignTacoController {
 
   private final IngredientRepository ingredientRepo;
 
+  private TacoRepository tacoRepo;
+
+  private UserRepository userRepo;
+
   @Autowired
   public DesignTacoController(
-        IngredientRepository ingredientRepo) {
+        IngredientRepository ingredientRepo,
+        TacoRepository tacoRepo,
+        UserRepository userRepo) {
     this.ingredientRepo = ingredientRepo;
+    this.tacoRepo = tacoRepo;
+    this.userRepo = userRepo;
   }
 
   @ModelAttribute
@@ -47,7 +61,7 @@ public class DesignTacoController {
     }
   }
 
-  @ModelAttribute(name = "tacoOrder")
+  @ModelAttribute(name = "order")
   public TacoOrder order() {
     return new TacoOrder();
   }
@@ -55,6 +69,13 @@ public class DesignTacoController {
   @ModelAttribute(name = "taco")
   public Taco taco() {
     return new Taco();
+  }
+
+  @ModelAttribute(name = "user")
+  public Users user(Principal principal) {
+	    String username = principal.getName();
+	    Users users = userRepo.findByUsername(username);
+	    return users;
   }
 
   @GetMapping
@@ -65,18 +86,21 @@ public class DesignTacoController {
   @PostMapping
   public String processTaco(
       @Valid Taco taco, Errors errors,
-      @ModelAttribute TacoOrder tacoOrder) {
+      @ModelAttribute TacoOrder order) {
+
+    log.info("   --- Saving taco");
 
     if (errors.hasErrors()) {
       return "design";
     }
 
-    tacoOrder.addTaco(taco);
+    Taco saved = tacoRepo.save(taco);
+    order.addTaco(saved);
 
     return "redirect:/orders/current";
   }
 
-  private Iterable<Ingredient> filterByType(
+  private List<Ingredient> filterByType(
       List<Ingredient> ingredients, Type type) {
     return ingredients
               .stream()

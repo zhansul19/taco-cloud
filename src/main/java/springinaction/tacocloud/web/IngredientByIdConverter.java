@@ -3,14 +3,14 @@ package springinaction.tacocloud.web;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
+
 import springinaction.tacocloud.Ingredient;
 import springinaction.tacocloud.data.IngredientRepository;
-
 
 @Component
 public class IngredientByIdConverter implements Converter<String, Ingredient> {
 
-  private final IngredientRepository ingredientRepo;
+  private IngredientRepository ingredientRepo;
 
   @Autowired
   public IngredientByIdConverter(IngredientRepository ingredientRepo) {
